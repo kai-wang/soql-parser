@@ -1,5 +1,3 @@
-use serde;
-use serde_derive;
-
+pub mod fields;
+pub mod keywords;
 pub mod soql;
-
