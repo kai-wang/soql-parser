@@ -7,7 +7,7 @@ use nom::character::complete::{alphanumeric0, digit1, line_ending, multispace0, 
 use nom::character::is_alphanumeric;
 use nom::combinator::{peek, eof, not, map, opt};
 use nom::multi::many0;
-use nom::sequence::{terminated, preceded, tuple};
+use nom::sequence::{terminated, preceded, tuple, delimited};
 use serde_derive::{Serialize, Deserialize};
 use std::str;
 use std::str::FromStr;
@@ -90,6 +90,7 @@ impl Display for Field {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum FunctionExpression {
+    COUNTALL,
     AVG(Field),
     COUNT(Field),
     COUNT_DISTINCT(Field),
@@ -144,10 +145,33 @@ pub fn field_parser(i: &[u8]) -> IResult<&[u8], Field> {
     )(i)
 }
 
-pub fn field_function_parser(i: &[u8]) -> IResult<&[u8], Field> {
+fn delim_args(i: &[u8]) -> IResult<&[u8], &[u8]> {
+    delimited(
+        tag("("), 
+        alt((     
+            delimited(
+            multispace0,
+            identifier,
+            multispace0
+            ),
+            multispace0
+        )),
+        tag(")"))(i)
+}
 
-    
-    todo!()
+pub fn field_function_parser(i: &[u8]) -> IResult<&[u8], FunctionExpression> {
+    alt((
+        map(preceded(tag_no_case("count"), delim_args), |args| {
+            println!("args: {:?}", str::from_utf8(args).unwrap().to_string());
+            match args.len() {
+                0 => FunctionExpression::COUNTALL,
+                _ => FunctionExpression::COUNT(Field {
+                    name: str::from_utf8(args).unwrap().to_string(),
+                    object: None
+                })
+            }
+        }),
+    ))(i)
 }
 
 #[cfg(test)]
@@ -196,9 +220,16 @@ mod tests {
     }
 
     #[test]
-    fn test() {
-        let res = many0(terminated(identifier, tag(".")))("Contact.Account.Name".as_bytes()).unwrap();
-        println!("{:?}", str::from_utf8(res.1[0].clone()).unwrap().to_string());
-        println!("{:?}", str::from_utf8(res.0.clone()).unwrap().to_string());
+    fn test_function_parser() {
+
+        println!("{:?}", field_function_parser(b"count()").unwrap().1);
+        println!("{:?}", field_function_parser(b"count( Name )").unwrap().1);
+
+
+
+
+        // let res = many0(terminated(identifier, tag(".")))("Contact.Account.Name".as_bytes()).unwrap();
+        // println!("{:?}", str::from_utf8(res.1[0].clone()).unwrap().to_string());
+        // println!("{:?}", str::from_utf8(res.0.clone()).unwrap().to_string());
     }
 }
