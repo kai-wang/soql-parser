@@ -26,13 +26,13 @@ impl Display for Field {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum FunctionExpression {
-    COUNTALL,
-    AVG(Field),
-    COUNT(Field),
-    COUNT_DISTINCT(Field),
-    MAX(Field),
-    MIN(Field),
-    SUM(Field),
+    CountAll,
+    Avg(Field),
+    Count(Field),
+    Count_Distinct(Field),
+    Max(Field),
+    Min(Field),
+    Sum(Field),
 }
 
 impl Display for FunctionExpression {
@@ -91,33 +91,33 @@ pub fn field_function_parser(i: &[u8]) -> IResult<&[u8], FunctionExpression> {
         map(
             preceded(tag_no_case("count"), function_args_parser),
             |args| match args {
-                None => FunctionExpression::COUNTALL,
-                Some(id) => FunctionExpression::COUNT(Field {
+                None => FunctionExpression::CountAll,
+                Some(id) => FunctionExpression::Count(Field {
                     name: str::from_utf8(id).unwrap().to_string(),
                     object: None,
                 }),
             },
         ),
         map(preceded(tag_no_case("avg"), function_args_parser), |args| {
-            FunctionExpression::AVG(Field {
+            FunctionExpression::Avg(Field {
                 name: str::from_utf8(args.unwrap()).unwrap().to_string(),
                 object: None,
             })
         }),
         map(preceded(tag_no_case("min"), function_args_parser), |args| {
-            FunctionExpression::MIN(Field {
+            FunctionExpression::Min(Field {
                 name: str::from_utf8(args.unwrap()).unwrap().to_string(),
                 object: None,
             })
         }),
         map(preceded(tag_no_case("max"), function_args_parser), |args| {
-            FunctionExpression::MAX(Field {
+            FunctionExpression::Max(Field {
                 name: str::from_utf8(args.unwrap()).unwrap().to_string(),
                 object: None,
             })
         }),
         map(preceded(tag_no_case("sum"), function_args_parser), |args| {
-            FunctionExpression::SUM(Field {
+            FunctionExpression::Sum(Field {
                 name: str::from_utf8(args.unwrap()).unwrap().to_string(),
                 object: None,
             })
@@ -125,7 +125,7 @@ pub fn field_function_parser(i: &[u8]) -> IResult<&[u8], FunctionExpression> {
         map(
             preceded(tag_no_case("count_distinct"), function_args_parser),
             |args| {
-                FunctionExpression::COUNT_DISTINCT(Field {
+                FunctionExpression::Count_Distinct(Field {
                     name: str::from_utf8(args.unwrap()).unwrap().to_string(),
                     object: None,
                 })
@@ -193,12 +193,12 @@ mod tests {
     fn test_function_parser() {
         assert_eq!(
             field_function_parser(b"count()").unwrap().1,
-            FunctionExpression::COUNTALL
+            FunctionExpression::CountAll
         );
 
         assert_eq!(
             field_function_parser(b"count( Name )").unwrap().1,
-            FunctionExpression::COUNT(Field {
+            FunctionExpression::Count(Field {
                 name: "Name".to_owned(),
                 object: None
             })
@@ -206,7 +206,7 @@ mod tests {
 
         assert_eq!(
             field_function_parser(b"max(Total)").unwrap().1,
-            FunctionExpression::MAX(Field {
+            FunctionExpression::Max(Field {
                 name: "Total".to_owned(),
                 object: None
             })
@@ -214,7 +214,7 @@ mod tests {
 
         assert_eq!(
             field_function_parser(b"min(Total)").unwrap().1,
-            FunctionExpression::MIN(Field {
+            FunctionExpression::Min(Field {
                 name: "Total".to_owned(),
                 object: None
             })
@@ -222,7 +222,7 @@ mod tests {
 
         assert_eq!(
             field_function_parser(b"sum(Total)").unwrap().1,
-            FunctionExpression::SUM(Field {
+            FunctionExpression::Sum(Field {
                 name: "Total".to_owned(),
                 object: None
             })
@@ -230,7 +230,7 @@ mod tests {
 
         assert_eq!(
             field_function_parser(b"count_distinct(Total)").unwrap().1,
-            FunctionExpression::COUNT_DISTINCT(Field {
+            FunctionExpression::Count_Distinct(Field {
                 name: "Total".to_owned(),
                 object: None
             })
