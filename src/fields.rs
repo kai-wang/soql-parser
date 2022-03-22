@@ -26,6 +26,9 @@ impl Display for Field {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum FunctionExpression {
+    FieldsAll,
+    FieldsStandard,
+    FieldsCustom,
     CountAll,
     Avg(Field),
     Count(Field),
@@ -62,6 +65,24 @@ impl Display for FieldExpression {
 ///     SELECT count() FROM Contact
 ///     SELECT Contact.Firstname, Contact.Account.Name FROM Contact
 ///     SELECT FIELDS(STANDARD) FROM Contact
+/// 
+/// https://developer.salesforce.com/docs/atlas.en-us.236.0.soql_sosl.meta/soql_sosl/sforce_api_calls_soql_select_fields.htm
+pub fn field_fields_parser(i: &[u8]) -> IResult<&[u8], FunctionExpression> {
+    alt((
+        map(
+            tag_no_case("FIELDS(ALL)"), 
+            |_| { FunctionExpression::FieldsAll } 
+        ), 
+        map(
+            tag_no_case("FIELDS(CUSTOM)"),
+            |_| { FunctionExpression::FieldsCustom }
+        ), 
+        map(
+            tag_no_case("FIELDS(STANDARD)"), 
+        |_| { FunctionExpression::FieldsStandard }
+        ), 
+    ))(i)
+}
 
 pub fn field_parser(i: &[u8]) -> IResult<&[u8], Field> {
     map(
@@ -235,5 +256,13 @@ mod tests {
                 object: None
             })
         );
+    }
+
+    #[test]
+    fn test_field_fields_function() {
+        assert_eq!(field_fields_parser(b"FIELDS(STANDARD)").unwrap().1, FunctionExpression::FieldsStandard);
+        assert_eq!(field_fields_parser(b"FIELDS(ALL)").unwrap().1, FunctionExpression::FieldsAll);
+        assert_eq!(field_fields_parser(b"FIELDS(CUSTOM)").unwrap().1, FunctionExpression::FieldsCustom);
+
     }
 }
